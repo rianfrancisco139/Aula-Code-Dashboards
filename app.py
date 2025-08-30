@@ -201,39 +201,64 @@ if d3 and d4 and "Data de Demissao" in df_f.columns:
                 ((df_f["Data de Demissao"] >= pd.to_datetime(d3)) &
                  (df_f["Data de Demissao"] <= pd.to_datetime(d4)))]
 
+# --------------------- Definições das funções KPI ---------------------
+def k_headcount_ativo(df):
+    return df[df["Status"] == "Ativo"].shape[0]
+
+def k_desligados(df):
+    return df[df["Status"] == "Desligado"].shape[0]
+
+def k_folha(df):
+    return df[df["Status"] == "Ativo"]["Salario Base"].sum()
+
+def k_custo_total(df):
+    return df[df["Status"] == "Ativo"]["Custo Total Mensal"].sum()
+
+def k_idade_media(df):
+    return df[df["Status"] == "Ativo"]["Idade"].mean()
+
+def k_avaliacao_media(df):
+    # Ajuste o nome da coluna 'Avaliacao' conforme o seu dataset
+    if "Avaliacao" in df.columns:
+        return df["Avaliacao"].mean()
+    return 0.0
+
 # --------------------- KPIs ---------------------
-def k_headcount_ativo(d): 
-    return int((d["Status"] == "Ativo").sum()) if "Status" in d.columns else 0
+def kpi_card(title, value, bg_color="#CF2626", text_color="#FFFFFF"):
+    return f"""
+    <div style="
+        background-color: {bg_color};
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+        color: {text_color};
+        font-family: 'Segoe UI', sans-serif;
+        margin-bottom: 15px;
+    ">
+        <div style="font-size: 14px; margin-top: 5px;">{title}</div>
+        <div style="font-size: 22px; font-weight: bold;">{value}</div>
+    </div>
+    """
 
-def k_desligados(d): 
-    return int((d["Status"] == "Desligado").sum()) if "Status" in d.columns else 0
+st.markdown("### 📊 Resumo Executivo de RH")
 
-def k_folha(d):
-    return float(d.loc[d["Status"] == "Ativo", "Salario Base"].sum()) \
-        if ("Status" in d.columns and "Salario Base" in d.columns) else 0.0
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown(kpi_card("Headcount Ativo", f"{k_headcount_ativo(df_f)} colaboradores", bg_color="#E60303", text_color="#004d00"), unsafe_allow_html=True)
+    st.markdown(kpi_card("Desligados", f"{k_desligados(df_f)} colaboradores", bg_color="#98FF98", text_color="#004d00"), unsafe_allow_html=True)
 
-def k_custo_total(d):
-    return float(d.loc[d["Status"] == "Ativo", "Custo Total Mensal"].sum()) \
-        if ("Status" in d.columns and "Custo Total Mensal" in d.columns) else 0.0
+with col2:
+    st.markdown(kpi_card("Folha Salarial", brl(k_folha(df_f)), bg_color="#98FF98", text_color="#004d00"), unsafe_allow_html=True)
+    st.markdown(kpi_card("Custo Total", brl(k_custo_total(df_f)), bg_color="#98FF98", text_color="#004d00"), unsafe_allow_html=True)
 
-def k_idade_media(d):
-    return float(d["Idade"].mean()) if "Idade" in d.columns and len(d) > 0 else 0.0
-
-def k_tempo_casa_medio(d):
-    col = "Tempo de Casa (meses)"
-    return float(d[col].mean()) if col in d.columns and len(d) > 0 else 0.0
-
-def k_avaliacao_media(d):
-    col = "Avaliação do Funcionário"
-    return float(d[col].mean()) if col in d.columns and len(d) > 0 else 0.0
-
-c1, c2, c3, c4, c5, c6 = st.columns(6)
-c1.metric("Headcount Ativo", k_headcount_ativo(df_f))
-c2.metric("Desligados", k_desligados(df_f))
-c3.metric("Folha Salarial", brl(k_folha(df_f)))
-c4.metric("Custo Total", brl(k_custo_total(df_f)))
-c5.metric("Idade Média", f"{k_idade_media(df_f):.1f} anos")
-c6.metric("Avaliação Média", f"{k_avaliacao_media(df_f):.2f}")
+with col3:
+    st.markdown(kpi_card("Idade Média", f"{k_idade_media(df_f):.1f} anos", bg_color="#98FF98", text_color="#004d00"), unsafe_allow_html=True)
+    
+    media_aval = k_avaliacao_media(df_f)
+    cor_seta = "⬆️" if media_aval >= 7 else "⬇️"
+    cor_texto = "#004d00"  # Verde escuro para manter coerência
+    st.markdown(kpi_card("Avaliação Média", f"{media_aval:.2f} {cor_seta}", bg_color="#98FF98", text_color=cor_texto), unsafe_allow_html=True)
 
 st.divider()
 
@@ -294,4 +319,3 @@ if to_excel:
         file_name="funcionarios_filtrado.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    
